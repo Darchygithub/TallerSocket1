@@ -5,15 +5,19 @@ from tkinter import * #importar la libreria tkinter para hacer la interfaz
 import random
 import os
 from tkinter import messagebox
+import socket
 
-
+HEADER = 1024
+PORT = 5050
+SERVER = "192.168.0.3"
+ADDR = (SERVER,PORT)
+FORMAT = 'utf8'
+DISCONNECT_MESSAGE = "DISCONNECT"
 
 def cambiarVentana(): # Funcion abrir la ventana del juego
     
-    def suma_punt(pje):
-        global puntajeNum
-        puntajeNum += 1
-        pje['text'] = "Puntaje: " + str(puntajeNum)
+    conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    conn.connect(ADDR)
     
     def refreshimg():
         global labelImg
@@ -22,7 +26,7 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
 
         labelimg.destroy()
         print(indexes)
-        indexchoice = random.choice(indexes)
+        indexchoice = int(conn.recv(1024).decode(FORMAT))
         print("list:",listImgsPath)
         print("choice:",indexchoice)
         ImagenAzar = imgPath + "/" + listImgsPath[indexchoice]
@@ -34,41 +38,23 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
     def enviarDatos(event): # Funcion destruir mensaje tras pulsar el boton de enviar
         mensaje = str(cuadroTexto.get(1.0, "end-1c"))
         
-        print(correct_answers[indexchoice])
-
-        if mensaje == correct_answers[indexchoice]:
+        conn.send(mensaje.encode(FORMAT))
+        response = conn.recv(1024).decode(FORMAT)
+        if  response == "correcto":
             print("respuesta Correcta")
-            messagebox.showinfo(message="Respuesta Correcta", title="LOL")
-            print(mensaje)
-            cuadroTexto.delete(1.0, END)
-            
-            global puntajeNum 
-            
-            
-            puntajeNum = puntajeNum - 1
-            
-            for i in range(indexes[indexchoice],len(indexes)):
-                print(i)
-                indexes[i] -= 1
-            print("pre list ",listImgsPath)
-            print("pre index list:",indexes)
-            print("choice", indexchoice)
-            listImgsPath.pop(indexchoice)
-            print("post list ",listImgsPath)
-            indexes.pop(indexchoice)
-            print("post index list:",indexes)
-            correct_answers.pop(indexchoice)
-                
             refreshimg()
-            cuadroTexto.delete(1.0, END)
-        else:
+        elif response == "incorrecto":
             print("respuesta Incorrecta")
-            print(mensaje)
-            cuadroTexto.delete(1.0, END)
+        elif response == "no preparado":
+            print("Aun no puede responder")
+        elif response == "preparado":
+            print("Listo para responder")
+        elif response == "todos listos":
+            print("Inicia el juego")
+            refreshimg()
+        else:
+            print("Ingreso invalido")
 
-    print(indexes)
-    
-    global indexchoice
     global figuraCentral
     
     ventanaJuego = Toplevel() #crear segunda ventana
@@ -87,8 +73,8 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
     puntajeAdversario2 = Label(ventanaJuego, text="Puntaje del adversario2 : X", fg="gray", font=("Verdana", 15)) #Texto puntaje adversario 2
     puntajeAdversario2.grid(row = 1, column = 1, padx= 30, pady = 10)
 
-    indexchoice = random.choice(indexes)
-    ImagenAzar = imgPath + "/" + listImgsPath[indexchoice]
+
+    ImagenAzar = "default.png"
     
     
     figuraCentral = PhotoImage(file=ImagenAzar) #Figura de ejemplo
@@ -101,7 +87,7 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
     botonEnviar.grid(row = 3, column = 1, columnspan=3)
 
     puntajeFaltante = Label(ventanaJuego, text="Faltan X puntos para ganar", fg="gray", font=("Verdana", 15)) #Texto de puntaje faltante
-    puntajeFaltante .grid(row = 4, column = 0, columnspan=2, padx= 30, pady = 10 )
+    puntajeFaltante.grid(row = 4, column = 0, columnspan=2, padx= 30, pady = 10 )
     
     #cuadroTexto.bind("<Return>",enviarDatos)
     botonEnviar.bind("<Button-1>",enviarDatos)
@@ -126,7 +112,6 @@ if __name__ == '__main__':
 
     puntajeNum = 10
     labelimg = Label()
-    indexchoice = 0
 
     Entrada = Button(raiz, text="Entrar", padx = 50, pady = 50, command=cambiarVentana)
     Entrada.pack(side="top")
