@@ -2,10 +2,10 @@
 # jugadores deben poner el nombre de esa figurita
 
 from tkinter import * #importar la libreria tkinter para hacer la interfaz
-import random
 import os
-from tkinter import messagebox
+from tkinter import messagebox,StringVar
 import socket
+import pickle
 
 HEADER = 1024
 PORT = 5050
@@ -18,6 +18,8 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
     
     conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     conn.connect(ADDR)
+    jugadores = []
+    jugadorespjes = []
     
     def refreshimg():
         global labelImg
@@ -25,8 +27,11 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
         global indexchoice
 
         labelimg.destroy()
-        print(indexes)
-        indexchoice = int(conn.recv(1024).decode(FORMAT))
+        print("Flag 1 client")
+        conn.send(" ".encode(FORMAT))
+        print("Flag 2 client")
+        conn.settimeout(10)
+        indexchoice = int(conn.recv(HEADER).decode(FORMAT))
         print("list:",listImgsPath)
         print("choice:",indexchoice)
         ImagenAzar = imgPath + "/" + listImgsPath[indexchoice]
@@ -35,11 +40,13 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
         labelImg = Label(ventanaJuego, image = figuraCentral).grid(row = 2, column = 0, columnspan=2, pady = 20) #Insertado en un Label    
         
         
-    def enviarDatos(event): # Funcion destruir mensaje tras pulsar el boton de enviar
-        mensaje = str(cuadroTexto.get(1.0, "end-1c"))
-        
+    def enviarDatos(e): # Funcion destruir mensaje tras pulsar el boton de enviar
+        global turno
+        mensaje = cuadroTexto.get(1.0,END)
+        print(mensaje)        
         conn.send(mensaje.encode(FORMAT))
-        response = conn.recv(1024).decode(FORMAT)
+        response = conn.recv(HEADER).decode(FORMAT)
+        
         if  response == "correcto":
             print("respuesta Correcta")
             refreshimg()
@@ -50,6 +57,21 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
         elif response == "preparado":
             print("Listo para responder")
         elif response == "todos listos":
+            conn.send(" ".encode(FORMAT))
+            jugadores = pickle.loads(conn.recv(HEADER))
+            print (jugadores)
+            
+            if turno == 0:
+                ventanaJuego.geometry("1000x640")
+                pje_frm.grid(row = 0,column = 5)
+                
+                print(jugadores)
+                for i in range(len(jugadores)):
+                    jugadorespjes.append(StringVar(value=0))
+                    puntajeAdversario = Label(pje_frm, text="Puntaje de "+ str(jugadores[i]) +":"+jugadorespjes[i].get(), fg="gray", font=("Verdana", 15)) #Texto puntaje adversario 1
+                    puntajeAdversario.grid(row = i+1, column = 0)
+            
+            turno = turno + 1                
             print("Inicia el juego")
             refreshimg()
         else:
@@ -61,21 +83,11 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
     ventanaJuego.state(newstate="normal") #poner como estado la segunda ventana como principal
     raiz.state(newstate="withdraw") #retirar la ventana raiz
     ventanaJuego.title =("Ventana del juego")
-    ventanaJuego.geometry("700x640")
+    ventanaJuego.geometry("600x640")
     ventanaJuego.iconbitmap("niko.ico")
     ventanaJuego.resizable(True,True)
 
-    puntaje = Label(ventanaJuego, text = "Puntaje: " + str(puntajeNum), fg="gray", font=("Verdana", 35)) #Texto puntaje
-    puntaje.grid(row = 0, column = 0, columnspan=2, pady = 20) #Insertarlo en un grid
-
-    puntajeAdversario = Label(ventanaJuego, text="Puntaje del adversario1 : X", fg="gray", font=("Verdana", 15)) #Texto puntaje adversario 1
-    puntajeAdversario.grid(row = 1, column = 0, padx= 30, pady = 10)
-    puntajeAdversario2 = Label(ventanaJuego, text="Puntaje del adversario2 : X", fg="gray", font=("Verdana", 15)) #Texto puntaje adversario 2
-    puntajeAdversario2.grid(row = 1, column = 1, padx= 30, pady = 10)
-
-
     ImagenAzar = "default.png"
-    
     
     figuraCentral = PhotoImage(file=ImagenAzar) #Figura de ejemplo
     labelImg = Label(ventanaJuego, image = figuraCentral).grid(row = 2, column = 0, columnspan=2, pady = 20) #Insertado en un Label    
@@ -84,11 +96,13 @@ def cambiarVentana(): # Funcion abrir la ventana del juego
     cuadroTexto.grid(row = 3, column = 0, columnspan=2, pady = 20)
 
     botonEnviar = Button(ventanaJuego, text="Enviar", fg="gray",font=("Verdana", 15)) #Boton de enviar
-    botonEnviar.grid(row = 3, column = 1, columnspan=3)
+    botonEnviar.grid(row = 3, column = 2, columnspan=3)
 
-    puntajeFaltante = Label(ventanaJuego, text="Faltan X puntos para ganar", fg="gray", font=("Verdana", 15)) #Texto de puntaje faltante
-    puntajeFaltante.grid(row = 4, column = 0, columnspan=2, padx= 30, pady = 10 )
+    pje_frm = Frame(ventanaJuego)
     
+    puntaje = Label(pje_frm, text = "Puntaje: " + str(puntajeNum), fg="gray", font=("Verdana", 25)) #Texto puntaje
+    puntaje.grid(row = 0, column = 0, columnspan=2, pady = 20) #Insertarlo en un grid
+
     #cuadroTexto.bind("<Return>",enviarDatos)
     botonEnviar.bind("<Button-1>",enviarDatos)
 
@@ -104,7 +118,8 @@ if __name__ == '__main__':
 
     listImgsPath = []
     correct_answers = []
-
+    turno = 0
+    
     for i in  os.listdir(path="./images"):
         listImgsPath.append(i)
         correct_answers.append(i[:-4])
