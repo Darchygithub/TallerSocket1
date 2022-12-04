@@ -3,6 +3,7 @@ import threading
 import os
 import random
 import pickle
+import time
 #AGREGAR CAMBIO MENSAJE MINUSCULAS
 
 HEADER = 1024
@@ -17,65 +18,68 @@ def all_hosts():
     for client in clients_list:
         print(client)
 
-def player_point(name,msg,newindex):
-    for client in clients_addr:
-        client.send(name+" "+msg+" "+str(newindex))
-    
+def broadcast_msg(name,msg,newindex):
+    if newindex == -1:
+        for client in clients_list:
+            client.send(str(msg).encode(FORMAT))
+    elif newindex == -2:
+        for client in clients_list:
+            client.send(msg)
+
 
 def handle_client(conn,addr):
     print(f"[NEW CONNECTION] {addr} connected.")
     start_game = False
     connected = True
+    global indexchoice
     while connected:
-        global start_flags
+        msg = conn.recv(HEADER).decode(FORMAT).strip()
         
-        try:
-            msg = conn.recv(HEADER).decode(FORMAT).strip()
-            #if start_game:
+        if start_game:
+            #El juego comienza
+            if msg in correct_answers:
+                print("Respuesta correcta ",msg)
                 
-            if start_flags == threading.active_count() - 1 :
-                start_game = True
-                print("TODOS PREPARADOS")
-                conn.send("todos listos".encode(FORMAT))
-                conn.recv(HEADER).decode(FORMAT)
-                for client in clients_list:
-                    data = pickle.dumps(clients_addr)
-                    client.send(data)
-                print("Flag 1 serv")
-                conn.recv(HEADER).decode(FORMAT)
-                print("Flag 2 serv con indice ",indexchoice)
-                for client in clients_list:
-                    client.send(str(indexchoice).encode(FORMAT))
-                '''
-                if msg in correct_answers:                
-                    listImgsPath.pop(indexchoice)
-                    indexes.pop(indexchoice)
-                    correct_answers.pop(indexchoice)
-                    
+                indexes.remove(correct_answers.index(msg))
+                if indexes:
                     indexchoice = random.choice(indexes)
-                    print(f"Player direccion ",addr," obtuvo punto")
-                    print("Nuevas respuestas correctas:")
-                    print(correct_answers)
-                    print("actual correcta:",correct_answers[indexchoice])
-
-                    player_point(addr," correcto ",indexchoice)
-                else:
-                    print(f"Player direccion ",addr," incorrecto")
-                    conn.send("incorrecto".encode(FORMAT))
-                    '''
                 
-            elif msg == "r":
-                start_flags = start_flags + 1
-                conn.send("preparado".encode(FORMAT))
+                broadcast_msg("","i"+str(clients_addr.index(addr))+str(indexchoice),-1)
+                
             else:
-                conn.send("no preparado".encode(FORMAT))
-            print(f"[{addr}] {msg}")
+                conn.send("w".encode(FORMAT))
+            
+        #Si el juego comenzo
+        else:
+            if msg == "r":
+                print("preparado")
+                print(clients_ready)
+                clients_ready[clients_addr.index(addr)] = 1     
+                    
+            if sum(clients_ready) == threading.active_count() - 1:
+                start_game = True
+                broadcast_msg("","r",-1)
+                #conn.send("r".encode(FORMAT))
+                time.sleep(0.5)
+                broadcast_msg("",str(indexchoice),-1)
+                time.sleep(0.5)
+                broadcast_msg("",pickle.dumps(clients_addr),-2)
+                print("comenzo el juego")
+            else:
+                print("Faltan jugadores preparados")            
+            
+        #print(f"[{addr}] {msg}")
+        '''
         except:
             if conn in clients_list:
+                print(clients_ready, " ",clients_list.index(conn)," ",clients_list)
+                clients_ready.pop(clients_list.index(conn))
                 clients_list.remove(conn)
                 clients_addr.remove(addr)
-                print(addr," Removido")        
-        
+                
+                print(addr," Removido")  
+            '''
+    print("Conexion cerrada")
     conn.close()
     
 def start():
@@ -86,6 +90,7 @@ def start():
         
         clients_list.append(conn)
         clients_addr.append(addr)
+        clients_ready.append(0)
         print(len(clients_list))
         thread = threading.Thread(target=handle_client, args=(conn,addr))
         thread.start()
@@ -96,7 +101,9 @@ server.bind(ADDR)
 
 clients_list = []
 clients_addr = []
-start_flags = 0
+clients_ready = []
+
+turno = 0
 
 correct_answers = []
 listImgsPath = []
@@ -112,7 +119,7 @@ indexchoice = random.choice(indexes)
 print("Servidor iniciado...")
 print("Respuestas correctas:")
 print(correct_answers)
-print("actual correcta:",correct_answers[indexchoice])
+print("actual correcta:",correct_answers[0])
 
 start()
 
