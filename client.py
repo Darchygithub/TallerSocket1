@@ -5,7 +5,7 @@ import socket
 import pickle
 from PIL import Image,ImageTk
 import threading
-import time
+#import time
 
 HEADER = 1024
 PORT = 5050
@@ -16,30 +16,6 @@ DISCONNECT_MESSAGE = "DISCONNECT"
 
 def send_ans(conn,msg):
     conn.send(msg.encode(FORMAT))
-    result = conn.recv(HEADER).decode(FORMAT).strip()
-    print(result)
-    if result[0] == "i":
-        print("correcto")
-        ind = int(result[1])
-        indexchoice = int(result[2])
-        jugadorespjes[ind] = jugadorespjes[ind] + 1
-        jugadoreslbl[ind].destroy()
-        jugadoreslbl[ind] = Label(points_wind,text="Puntos del jugador "+str(jugadores[ind])+ ":  "+ str(jugadorespjes[ind]),font=("Verdana", 15))
-        jugadoreslbl[ind].grid(row=ind)      
-        
-        randomImg = listImgsFile[int(indexchoice)]
-        centerImg = ImageTk.PhotoImage(Image.open(imgPath + "/" + randomImg)) #Figura de ejemplo    
-        
-        global imgLbl
-        
-        imgLbl.destroy()
-        imgLbl = Label(game_wind, image = centerImg) #Insertado en un Label
-        imgLbl.image = centerImg
-        
-        imgLbl.grid(row = 2, column = 0, columnspan=2, pady = 20)          
-    elif result == "w":
-        print("incorrecto")
-    
     
 def ready_msg(conn,wind):
     #messagebox.showinfo(message="Espere a los demas jugadores")
@@ -94,12 +70,13 @@ def preparation_screen():
 
 def get_point(conn):
     while True:
-        time.sleep(0.5)
         point_player = None
         point_player = conn.recv(HEADER).decode(FORMAT,errors='replace').strip()
         if point_player[0] == "i":           
             print(point_player)
             give_player_point(int(point_player[1]),int(point_player[2]))
+        elif point_player == "w":
+            print("Incorrecto")
         
 def points_screen(conn):
     global jugadores
@@ -135,7 +112,8 @@ def game_screen(conn):
     global indexchoice
     
     indexchoice = conn.recv(HEADER).decode(FORMAT)
-    
+    print(indexchoice)
+    print(listImgsFile)
     global imgLbl
     
     randomImg = listImgsFile[int(indexchoice)]
@@ -151,6 +129,7 @@ def game_screen(conn):
 
     botonEnviar = Button(game_wind, text="Enviar", fg="gray",font=("Verdana", 15),command=lambda: send_ans(conn,cuadroTexto.get(1.0,END))) #Boton de enviar
     botonEnviar.grid(row = 3, column = 2, columnspan=3)
+    
     
     points_screen(conn)
     
@@ -171,6 +150,10 @@ if __name__ == '__main__':
     for i in  os.listdir(path="./images"):
         listImgsFile.append(i)
         correct_answers.append(i[:-4])
+    
+    listImgsFile.sort()
+    correct_answers.sort()
+    
     indexes = [*range(0,len(listImgsFile),1)]
 
     enterBtn = Button(root, text="Entrar", padx = 500, pady = 500, command=preparation_screen)
