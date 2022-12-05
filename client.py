@@ -112,7 +112,8 @@ def game_screen(conn):
     global indexchoice
     
     indexchoice = conn.recv(HEADER).decode(FORMAT)
-    
+    print(indexchoice)
+    print(listImgsFile)
     global imgLbl
     
     randomImg = listImgsFile[int(indexchoice)]
@@ -128,6 +129,7 @@ def game_screen(conn):
 
     botonEnviar = Button(game_wind, text="Enviar", fg="gray",font=("Verdana", 15),command=lambda: send_ans(conn,cuadroTexto.get(1.0,END))) #Boton de enviar
     botonEnviar.grid(row = 3, column = 2, columnspan=3)
+    
     
     points_screen(conn)
     
@@ -148,6 +150,10 @@ if __name__ == '__main__':
     for i in  os.listdir(path="./images"):
         listImgsFile.append(i)
         correct_answers.append(i[:-4])
+    
+    listImgsFile.sort()
+    correct_answers.sort()
+    
     indexes = [*range(0,len(listImgsFile),1)]
 
     enterBtn = Button(root, text="Entrar", padx = 500, pady = 500, command=preparation_screen)

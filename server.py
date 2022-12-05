@@ -112,6 +112,10 @@ listImgsPath = []
 for i in  os.listdir(path="./images"):
     listImgsPath.append(i)
     correct_answers.append(i[:-4])
+    
+listImgsPath.sort()
+correct_answers.sort()
+            
 indexes = [*range(0,len(listImgsPath),1)]
 
 puntajeNum = 10
