@@ -37,10 +37,11 @@ def handle_client(conn,addr):
         
         if start_game:
             #El juego comienza
-            if msg in correct_answers:
+            if msg == correct_answers[indexchoice]:
                 print("Respuesta correcta ",msg)
                 
-                indexes.remove(correct_answers.index(msg))
+                if correct_answers.index(msg):
+                    indexes.remove(correct_answers.index(msg))
                 if indexes:
                     indexchoice = random.choice(indexes)
                 
@@ -119,37 +120,9 @@ indexchoice = random.choice(indexes)
 print("Servidor iniciado...")
 print("Respuestas correctas:")
 print(correct_answers)
-print("actual correcta:",correct_answers[0])
+print("actual correcta:",correct_answers[indexchoice])
 
 start()
-
-'''
-if mensaje == correct_answers[indexchoice]:
-    
-    messagebox.showinfo(message="Respuesta Correcta", title="LOL")
-    
-    cuadroTexto.delete(1.0, END)
-    
-    global puntajeNum 
-    
-    
-    puntajeNum = puntajeNum - 1
-    
-    for i in range(indexes[indexchoice],len(indexes)):
-        print(i)
-        indexes[i] -= 1
-
-    listImgsPath.pop(indexchoice)
-    indexes.pop(indexchoice)
-    correct_answers.pop(indexchoice)
-        
-    refreshimg()
-    cuadroTexto.delete(1.0, END)
-else:
-    print("respuesta Incorrecta")
-    print(mensaje)
-    cuadroTexto.delete(1.0, END)
-'''
 
 #https://www.youtube.com/watch?v=3QiPPX-KeSc
 #https://www.youtube.com/watch?v=lGL1XZfix-w
