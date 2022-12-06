@@ -5,7 +5,7 @@ import socket
 import pickle
 from PIL import Image,ImageTk
 import threading
-#import time
+import time
 
 HEADER = 1024
 PORT = 5050
@@ -33,23 +33,35 @@ def give_player_point(ind,choice):
     print(ind)
     
     global imgLbl
+    global ansText
+    global notifLbl
+    global sendBtn
     
     jugadorespjes[ind] = jugadorespjes[ind] + 1
     jugadoreslbl[ind].destroy()
     jugadoreslbl[ind] = Label(points_wind,text="Puntos del jugador "+str(jugadores[ind])+ ":  "+ str(jugadorespjes[ind]),font=("Verdana", 15))
     jugadoreslbl[ind].grid(row=ind)
     
-    indexchoice = choice
     
-    randomImg = listImgsFile[int(indexchoice)]
-    centerImg = ImageTk.PhotoImage(Image.open(imgPath + "/" + randomImg)) #Figura de ejemplo    
-    
+    if choice != 9:
+        indexchoice = choice        
+        randomImg = listImgsFile[int(indexchoice)]
+        centerImg = ImageTk.PhotoImage(Image.open(imgPath + "/" + randomImg))
+    else:
+        centerImg = ImageTk.PhotoImage(Image.open("default.png"))
+        sendBtn['state'] = DISABLED
+        notifLbl['text'] = "Terminado!"
+         
+        
     imgLbl.destroy()
     imgLbl = Label(game_wind, image = centerImg) #Insertado en un Label
     imgLbl.image = centerImg
     
     imgLbl.grid(row = 2, column = 0, columnspan=2, pady = 20)
-        
+
+    ansText.delete("1.0",END)
+    
+    
 def preparation_screen():
     
     conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -57,36 +69,43 @@ def preparation_screen():
     
     prep_wind = Toplevel()
     prep_wind.title("Players")
-    prep_wind.geometry("300x600+900+100")
+    prep_wind.geometry("300x300")
     prep_wind.resizable(False,False)
     
-    readyBtn = Button(prep_wind, text="Enviar", fg="gray",font=("Verdana", 15),command=lambda: ready_msg(conn,prep_wind)) #Boton de enviar
+    readyBtn = Button(prep_wind, text="Conectar", fg="gray",font=("Verdana", 15),command=lambda: ready_msg(conn,prep_wind), padx=100, pady=130) #Boton de enviar
     readyBtn.grid(row = 0, column = 0, columnspan=3)
     
 
     root.withdraw()
     
-    #game_screen()
-
 def get_point(conn):
+    global notifLbl
     while True:
         point_player = None
         point_player = conn.recv(HEADER).decode(FORMAT,errors='replace').strip()
         if point_player[0] == "i":           
             print(point_player)
+            notifLbl["text"] = "Correcto!"
+            time.sleep(0.1)
+            notifLbl["text"] = ""
+            give_player_point(int(point_player[1]),int(point_player[2]))
+        elif point_player == "endgame":
             give_player_point(int(point_player[1]),int(point_player[2]))
         elif point_player == "w":
+            notifLbl["text"] = "Incorrecto"
+            time.sleep(0.5)
+            notifLbl["text"] = ""
             print("Incorrecto")
         
 def points_screen(conn):
     global jugadores
-    jugadores = pickle.loads(conn.recv(HEADER))
-    
     global jugadorespjes
     global jugadoreslbl
+    global points_wind
+    jugadores = pickle.loads(conn.recv(HEADER))
+    
     jugadorespjes = []
     jugadoreslbl = []
-    global points_wind
     points_wind = Toplevel()
     points_wind.title("Players")
     points_wind.geometry("600x600+900+100")
@@ -104,17 +123,20 @@ def points_screen(conn):
     
 def game_screen(conn):
     global game_wind
+    global indexchoice
+    global imgLbl
+    global ansText
+    global notifLbl
+    global sendBtn
+    
     game_wind = Toplevel()
     game_wind.title("Game")
     game_wind.geometry("600x600+300+100")
     game_wind.resizable(False,False)
-    
-    global indexchoice
-    
+
     indexchoice = conn.recv(HEADER).decode(FORMAT)
     print(indexchoice)
     print(listImgsFile)
-    global imgLbl
     
     randomImg = listImgsFile[int(indexchoice)]
     centerImg = ImageTk.PhotoImage(Image.open(imgPath + "/" + randomImg)) #Figura de ejemplo    
@@ -124,11 +146,16 @@ def game_screen(conn):
     
     imgLbl.grid(row = 2, column = 0, columnspan=2, pady = 20)
     
-    cuadroTexto = Text(game_wind, width=50, height=1) #Cuadro de texto
-    cuadroTexto.grid(row = 3, column = 0, columnspan=2, pady = 20)
+    ansText = Text(game_wind, width=50, height=1) #Cuadro de texto
+    ansText.grid(row = 3, column = 0, columnspan=2, pady = 20)
 
-    botonEnviar = Button(game_wind, text="Enviar", fg="gray",font=("Verdana", 15),command=lambda: send_ans(conn,cuadroTexto.get(1.0,END))) #Boton de enviar
-    botonEnviar.grid(row = 3, column = 2, columnspan=3)
+    notifLbl = Label(game_wind,text="",font=("Verdana", 15))
+    notifLbl.grid(row = 4, column = 0, columnspan=2, pady = 20)
+    
+    sendBtn = Button(game_wind, text="Enviar", fg="gray",font=("Verdana", 15),command=lambda: send_ans(conn,ansText.get(1.0,END))) #Boton de enviar
+    sendBtn.grid(row = 3, column = 2, columnspan=3)
+    
+    ansText.bind('<Return>',lambda event: send_ans(conn,ansText.get(1.0,END)))
     
     
     points_screen(conn)
@@ -139,7 +166,7 @@ if __name__ == '__main__':
     root.title("Menu principal") # Titulo
     root.resizable(False,False) #Activar/Desactivar aumento/reduccion de ventana
     root.iconbitmap("niko.ico") # Icono
-    root.geometry("600x300") # Resolucion de la ventana
+    root.geometry("300x300") # Resolucion de la ventana
 
     imgPath = "./images"
 
@@ -156,7 +183,7 @@ if __name__ == '__main__':
     
     indexes = [*range(0,len(listImgsFile),1)]
 
-    enterBtn = Button(root, text="Entrar", padx = 500, pady = 500, command=preparation_screen)
+    enterBtn = Button(root, text="Entrar", padx = 300, pady = 300, command=preparation_screen)
     enterBtn.pack(side="top")
 
 
