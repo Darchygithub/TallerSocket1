@@ -37,15 +37,17 @@ def handle_client(conn,addr):
         
         if start_game:
             #El juego comienza
+            
             if msg == correct_answers[indexchoice]:
-                print("Respuesta correcta ",msg)
+                print("Respuesta correcta ",msg)                    
                 
-                if correct_answers.index(msg):
-                    indexes.remove(correct_answers.index(msg))
+                indexes.remove(correct_answers.index(msg))
+                
                 if indexes:
                     indexchoice = random.choice(indexes)
-                
-                broadcast_msg("","i"+str(clients_addr.index(addr))+str(indexchoice),-1)
+                    broadcast_msg("","i"+str(clients_addr.index(addr))+str(indexchoice),-1)
+                else:
+                    broadcast_msg("endgame","i"+str(clients_addr.index(addr))+str(9),-1)
                 
             else:
                 conn.send("w".encode(FORMAT))
