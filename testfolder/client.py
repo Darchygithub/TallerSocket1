@@ -172,8 +172,7 @@ if __name__ == '__main__':
 
     listImgsFile = []
     correct_answers = []
-    turn = 0
-    
+ 
     for i in  os.listdir(path="./images"):
         listImgsFile.append(i)
         correct_answers.append(i[:-4])
