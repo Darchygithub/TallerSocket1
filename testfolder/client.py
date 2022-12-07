@@ -31,8 +31,6 @@ def ready_msg(conn,wind):
 #Función que realiza el proceso de dar el puntaje a un jugador
 def give_player_point(ind,choice):
     print("punto jugador")
-    print(jugadorespjes)
-    print(ind)
     
     global imgLbl
     global ansText
@@ -83,6 +81,7 @@ def preparation_screen():
 #Función que permite al cliente recibir un mensaje del servidor en cualquier momento.
 def get_point(conn):
     global notifLbl
+    global ansText
     while True:
         point_player = None
         point_player = conn.recv(HEADER).decode(FORMAT,errors='replace').strip()
@@ -95,6 +94,7 @@ def get_point(conn):
         elif point_player == "endgame":
             give_player_point(int(point_player[1]),int(point_player[2]))
         elif point_player == "w":
+            ansText.delete("1.0",END)
             notifLbl["text"] = "Incorrecto"
             time.sleep(0.5)
             notifLbl["text"] = ""
@@ -121,8 +121,6 @@ def points_screen(conn):
         jugadoreslbl.append(Label(points_wind,text="Puntos del jugador "+str(jugadores[i])+ ":  "+ str(jugadorespjes[i]),font=("Verdana", 15)))
         jugadoreslbl[i].grid(row=i)
         
-    
-    
     point_t = threading.Thread(target=get_point, args=(conn,)).start()
 
 #Función que genera la pantalla de juego principal
