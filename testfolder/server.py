@@ -4,20 +4,20 @@ import os
 import random
 import pickle
 import time
-#AGREGAR CAMBIO MENSAJE MINUSCULAS
 
 HEADER = 1024
 PORT = 5050
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER,PORT)
 FORMAT = 'utf8'
-#DISCONNECT_MESSAGE = "DISCONNECT"
 
+#Funcion que muestra todos los host actualmente conectados
 def all_hosts():
     os.system("cls")
     for client in clients_list:
         print(client)
 
+#Funcion que envia un mensaje codificado o no codificado a todos los clientes
 def broadcast_msg(msg,newindex):
     if newindex == -1:
         for client in clients_list:
@@ -26,7 +26,7 @@ def broadcast_msg(msg,newindex):
         for client in clients_list:
             client.send(msg)
 
-
+#Funcion que maneja la conexión de cada cliente en específico
 def handle_client(conn,addr):
     print(f"[NEW CONNECTION] {addr} connected.")
     start_game = False
@@ -35,8 +35,8 @@ def handle_client(conn,addr):
     while connected:
         msg = conn.recv(HEADER).decode(FORMAT).strip()
         
-        if start_game:
-            #El juego comienza
+        #Condición que detecta si el juego comenzó o no
+        if start_game:            
             msg = msg.lower()
             if msg == correct_answers[indexchoice]:
                 print("Respuesta correcta ",msg)                    
@@ -47,12 +47,11 @@ def handle_client(conn,addr):
                     indexchoice = random.choice(indexes)
                     broadcast_msg("i"+str(clients_addr.index(addr))+str(indexchoice),-1)
                 else:
-                    broadcast_msg("endgame","i"+str(clients_addr.index(addr))+str(9),-1)
+                    broadcast_msg("i"+str(clients_addr.index(addr))+str(9),-1)
                 
             else:
                 conn.send("w".encode(FORMAT))
-            
-        #Si el juego comenzo
+                    
         else:
             if msg == "r":
                 print("preparado")
@@ -61,8 +60,7 @@ def handle_client(conn,addr):
                     
             if sum(clients_ready) == threading.active_count() - 1:
                 start_game = True
-                broadcast_msg("r",-1)
-                #conn.send("r".encode(FORMAT))
+                broadcast_msg("r",-1)                
                 time.sleep(0.5)
                 broadcast_msg(str(indexchoice),-1)
                 time.sleep(0.5)
@@ -70,21 +68,10 @@ def handle_client(conn,addr):
                 print("comenzo el juego")
             else:
                 print("Faltan jugadores preparados")            
-            
-        #print(f"[{addr}] {msg}")
-        '''
-        except:
-            if conn in clients_list:
-                print(clients_ready, " ",clients_list.index(conn)," ",clients_list)
-                clients_ready.pop(clients_list.index(conn))
-                clients_list.remove(conn)
-                clients_addr.remove(addr)
-                
-                print(addr," Removido")  
-            '''
     print("Conexion cerrada")
     conn.close()
-    
+
+#Función que deja al servidor en escucha y genera un hilo por cada conexión
 def start():
     server.listen()
     print(f"[LISTENING] Server is listening on {SERVER}")
@@ -99,34 +86,33 @@ def start():
         thread.start()
         print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1 }")
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(ADDR)
+#Código main del servidor que se ejecuta al iniciar
+if __name__ == '__main__':
+    #Genera el servidor socket
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(ADDR)
 
-clients_list = []
-clients_addr = []
-clients_ready = []
+    clients_list = []
+    clients_addr = []
+    clients_ready = []
 
-turno = 0
+    correct_answers = []
+    listImgsPath = []
 
-correct_answers = []
-listImgsPath = []
+    #Se inicializa las imagenes y sus posibles respuestas para las mismas
+    for i in  os.listdir(path="./images"):
+        listImgsPath.append(i)
+        correct_answers.append(i[:-4])
+        
+    listImgsPath.sort()
+    correct_answers.sort()
+                
+    indexes = [*range(0,len(listImgsPath),1)]
 
-for i in  os.listdir(path="./images"):
-    listImgsPath.append(i)
-    correct_answers.append(i[:-4])
-    
-listImgsPath.sort()
-correct_answers.sort()
-            
-indexes = [*range(0,len(listImgsPath),1)]
+    indexchoice = random.choice(indexes)
+    print("Servidor iniciado...")
+    print("Respuestas correctas:")
+    print(correct_answers)
+    print("actual correcta:",correct_answers[indexchoice])
 
-indexchoice = random.choice(indexes)
-print("Servidor iniciado...")
-print("Respuestas correctas:")
-print(correct_answers)
-print("actual correcta:",correct_answers[indexchoice])
-
-start()
-
-#https://www.youtube.com/watch?v=3QiPPX-KeSc
-#https://www.youtube.com/watch?v=lGL1XZfix-w
+    start()

@@ -14,11 +14,12 @@ ADDR = (SERVER,PORT)
 FORMAT = 'utf8'
 DISCONNECT_MESSAGE = "DISCONNECT"
 
+#Función que envia un mensaje y lo codifica en el formato específico
 def send_ans(conn,msg):
     conn.send(msg.encode(FORMAT))
     
-def ready_msg(conn,wind):
-    #messagebox.showinfo(message="Espere a los demas jugadores")
+#Función que indica al servidor si el jugador está listo
+def ready_msg(conn,wind):    
     conn.settimeout(100)
     conn.send("r".encode(FORMAT))
     start = conn.recv(HEADER).decode(FORMAT)
@@ -27,22 +28,22 @@ def ready_msg(conn,wind):
         wind.destroy()
         game_screen(conn)
 
+#Función que realiza el proceso de dar el puntaje a un jugador
 def give_player_point(ind,choice):
     print("punto jugador")
-    print(jugadorespjes)
-    print(ind)
     
     global imgLbl
     global ansText
     global notifLbl
     global sendBtn
     
+    #Etiqueta específica del jugador que gana el punto
     jugadorespjes[ind] = jugadorespjes[ind] + 1
     jugadoreslbl[ind].destroy()
     jugadoreslbl[ind] = Label(points_wind,text="Puntos del jugador "+str(jugadores[ind])+ ":  "+ str(jugadorespjes[ind]),font=("Verdana", 15))
     jugadoreslbl[ind].grid(row=ind)
-    
-    
+        
+    #Condición que indica el último turno
     if choice != 9:
         indexchoice = choice        
         randomImg = listImgsFile[int(indexchoice)]
@@ -52,18 +53,17 @@ def give_player_point(ind,choice):
         sendBtn['state'] = DISABLED
         notifLbl['text'] = "Terminado!"
          
-        
+    #Actualiza la imagen central        
     imgLbl.destroy()
-    imgLbl = Label(game_wind, image = centerImg) #Insertado en un Label
+    imgLbl = Label(game_wind, image = centerImg)
     imgLbl.image = centerImg
     
     imgLbl.grid(row = 2, column = 0, columnspan=2, pady = 20)
 
     ansText.delete("1.0",END)
     
-    
-def preparation_screen():
-    
+#Funcion de pantalla de preparación para "sincronizar" los clientes
+def preparation_screen():    
     conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     conn.connect(ADDR)
     
@@ -78,8 +78,10 @@ def preparation_screen():
 
     root.withdraw()
     
+#Función que permite al cliente recibir un mensaje del servidor en cualquier momento.
 def get_point(conn):
     global notifLbl
+    global ansText
     while True:
         point_player = None
         point_player = conn.recv(HEADER).decode(FORMAT,errors='replace').strip()
@@ -92,11 +94,13 @@ def get_point(conn):
         elif point_player == "endgame":
             give_player_point(int(point_player[1]),int(point_player[2]))
         elif point_player == "w":
+            ansText.delete("1.0",END)
             notifLbl["text"] = "Incorrecto"
             time.sleep(0.5)
             notifLbl["text"] = ""
             print("Incorrecto")
-        
+
+#Función que genera la pantalla donde se muestran los puntajes de los jugadores
 def points_screen(conn):
     global jugadores
     global jugadorespjes
@@ -111,16 +115,15 @@ def points_screen(conn):
     points_wind.geometry("600x600+900+100")
     points_wind.resizable(False,False)
     
+    #Crea la etiqueta por cada jugador
     for i in range(len(jugadores)):
         jugadorespjes.append(0)
         jugadoreslbl.append(Label(points_wind,text="Puntos del jugador "+str(jugadores[i])+ ":  "+ str(jugadorespjes[i]),font=("Verdana", 15)))
         jugadoreslbl[i].grid(row=i)
         
-    
-    
     point_t = threading.Thread(target=get_point, args=(conn,)).start()
 
-    
+#Función que genera la pantalla de juego principal
 def game_screen(conn):
     global game_wind
     global indexchoice
@@ -138,52 +141,49 @@ def game_screen(conn):
     print(indexchoice)
     print(listImgsFile)
     
+    #Se genera los componentes principales de la interfaz de usuario
     randomImg = listImgsFile[int(indexchoice)]
-    centerImg = ImageTk.PhotoImage(Image.open(imgPath + "/" + randomImg)) #Figura de ejemplo    
+    centerImg = ImageTk.PhotoImage(Image.open(imgPath + "/" + randomImg)) 
     
-    imgLbl = Label(game_wind, image = centerImg) #Insertado en un Label
+    imgLbl = Label(game_wind, image = centerImg) 
     imgLbl.image = centerImg
     
     imgLbl.grid(row = 2, column = 0, columnspan=2, pady = 20)
     
-    ansText = Text(game_wind, width=50, height=1) #Cuadro de texto
+    ansText = Text(game_wind, width=50, height=1) 
     ansText.grid(row = 3, column = 0, columnspan=2, pady = 20)
 
     notifLbl = Label(game_wind,text="",font=("Verdana", 15))
     notifLbl.grid(row = 4, column = 0, columnspan=2, pady = 20)
     
-    sendBtn = Button(game_wind, text="Enviar", fg="gray",font=("Verdana", 15),command=lambda: send_ans(conn,ansText.get(1.0,END))) #Boton de enviar
+    sendBtn = Button(game_wind, text="Enviar", fg="gray",font=("Verdana", 15),command=lambda: send_ans(conn,ansText.get(1.0,END))) 
     sendBtn.grid(row = 3, column = 2, columnspan=3)
     
     ansText.bind('<Return>',lambda event: send_ans(conn,ansText.get(1.0,END)))
     
-    
     points_screen(conn)
     
-
+#Código main de la aplicación que se ejecuta al iniciar
 if __name__ == '__main__':
-    root = Tk() # Habilitar Interfaz grafica
-    root.title("Menu principal") # Titulo
-    root.resizable(False,False) #Activar/Desactivar aumento/reduccion de ventana
-    root.iconbitmap("niko.ico") # Icono
-    root.geometry("300x300") # Resolucion de la ventana
+    #Genera una ventana con su configuración
+    root = Tk() 
+    root.title("Menu principal") 
+    root.resizable(False,False) 
+    root.iconbitmap("niko.ico") 
+    root.geometry("300x300")
 
+    #Se inicializan las imagenes para el juego
     imgPath = "./images"
 
     listImgsFile = []
-    correct_answers = []
  
     for i in  os.listdir(path="./images"):
         listImgsFile.append(i)
-        correct_answers.append(i[:-4])
     
     listImgsFile.sort()
-    correct_answers.sort()
     
-    indexes = [*range(0,len(listImgsFile),1)]
-
     enterBtn = Button(root, text="Entrar", padx = 300, pady = 300, command=preparation_screen)
     enterBtn.pack(side="top")
 
-
-    root.mainloop() # Mantener en loop activo a la Interfaz
+    #Mantiene la aplicación siempre funcionando en un loop
+    root.mainloop() 
