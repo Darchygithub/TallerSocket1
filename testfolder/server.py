@@ -18,7 +18,7 @@ def all_hosts():
     for client in clients_list:
         print(client)
 
-def broadcast_msg(name,msg,newindex):
+def broadcast_msg(msg,newindex):
     if newindex == -1:
         for client in clients_list:
             client.send(str(msg).encode(FORMAT))
@@ -37,7 +37,7 @@ def handle_client(conn,addr):
         
         if start_game:
             #El juego comienza
-            
+            msg = msg.lower()
             if msg == correct_answers[indexchoice]:
                 print("Respuesta correcta ",msg)                    
                 
@@ -45,7 +45,7 @@ def handle_client(conn,addr):
                 
                 if indexes:
                     indexchoice = random.choice(indexes)
-                    broadcast_msg("","i"+str(clients_addr.index(addr))+str(indexchoice),-1)
+                    broadcast_msg("i"+str(clients_addr.index(addr))+str(indexchoice),-1)
                 else:
                     broadcast_msg("endgame","i"+str(clients_addr.index(addr))+str(9),-1)
                 
@@ -61,12 +61,12 @@ def handle_client(conn,addr):
                     
             if sum(clients_ready) == threading.active_count() - 1:
                 start_game = True
-                broadcast_msg("","r",-1)
+                broadcast_msg("r",-1)
                 #conn.send("r".encode(FORMAT))
                 time.sleep(0.5)
-                broadcast_msg("",str(indexchoice),-1)
+                broadcast_msg(str(indexchoice),-1)
                 time.sleep(0.5)
-                broadcast_msg("",pickle.dumps(clients_addr),-2)
+                broadcast_msg(pickle.dumps(clients_addr),-2)
                 print("comenzo el juego")
             else:
                 print("Faltan jugadores preparados")            
@@ -119,8 +119,6 @@ listImgsPath.sort()
 correct_answers.sort()
             
 indexes = [*range(0,len(listImgsPath),1)]
-
-puntajeNum = 10
 
 indexchoice = random.choice(indexes)
 print("Servidor iniciado...")
