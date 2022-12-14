@@ -48,19 +48,30 @@ def give_player_point(ind,choice):
         indexchoice = choice        
         randomImg = listImgsFile[int(indexchoice)]
         centerImg = ImageTk.PhotoImage(Image.open(imgPath + "/" + randomImg))
-    else:
-        centerImg = ImageTk.PhotoImage(Image.open("default.png"))
-        sendBtn['state'] = DISABLED
-        notifLbl['text'] = "Terminado!"
-         
-    #Actualiza la imagen central        
-    imgLbl.destroy()
-    imgLbl = Label(game_wind, image = centerImg)
-    imgLbl.image = centerImg
-    
-    imgLbl.grid(row = 2, column = 0, columnspan=2, pady = 20)
+        #Actualiza la imagen central        
+        imgLbl.destroy()
+        imgLbl = Label(game_wind, image = centerImg)
+        imgLbl.image = centerImg
+        
+        imgLbl.grid(row = 2, column = 0, columnspan=2, pady = 20)
 
-    ansText.delete("1.0",END)
+        ansText.delete("1.0",END)        
+    else:
+        centerImg = ImageTk.PhotoImage(Image.open("endimg.png"))
+        sendBtn.destroy()
+        ansText.destroy()
+        
+        #Notificacion que contempla solo 1 posible ganador para el juego
+        notifLbl['text'] = "Ganador jugador " + str(jugadores[jugadorespjes.index(max(jugadorespjes))])
+        
+        #Actualiza la imagen central        
+        imgLbl.destroy()
+        imgLbl = Label(game_wind, image = centerImg)
+        imgLbl.image = centerImg
+        
+        imgLbl.grid(row = 0, column = 0, columnspan=3)
+
+         
     
 #Funcion de pantalla de preparación para "sincronizar" los clientes
 def preparation_screen():    
@@ -169,7 +180,6 @@ if __name__ == '__main__':
     root = Tk() 
     root.title("Menu principal") 
     root.resizable(False,False) 
-    root.iconbitmap("niko.ico") 
     root.geometry("300x300")
 
     #Se inicializan las imagenes para el juego
